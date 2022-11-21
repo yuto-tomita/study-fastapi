@@ -1,0 +1,5 @@
+.devcontainer
+.venv
+.dockerenv
+.vscode
+__pycache__
