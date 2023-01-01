@@ -1,51 +1,26 @@
+from fastapi import Depends, FastAPI, Query, HTTPException, Request, Response
 from typing import Optional, Union
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
+from sqlalchemy.orm import Session
+from .infra.db.database import Base, engine, SessionLocal
 
-class Item(BaseModel):
-  name: str
-  description: Union[str, None] = None
-  price: float
-  tax: Union[float, None] = None
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-items = [
-  {
-    "item_id": 1,
-    "name": ""
-  }
-]
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
-@app.get("/")
-async def root():
-  return {"message":"Hello"}
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Optional[str] = Query(default = None, max_length = 50)):
-  results = { "items": [{"item_id": "Foo"}, {"item_id": "Bar"}] }
-
-  if q:
-    results.update({"q": q})
-  return results
-
-@app.get("/users/{user_id}")
-def read_user_me(user_id: str):
-  return {"user_id": user_id}
-
-@app.post("/items/")
-def read_items(item: Item):
-  item_dict = item.dict()
-  
-  if item.tax:
-    price_with_tax = item.price + item.tax
-    item_dict.update({"price_with_tax": price_with_tax})
-
-  return item_dict
-
-@app.put("/items/{item_id}")
-async def update_item(item_id: int, item: Item, q: Union[str, None] = None):
-  result = {"item_id": item_id, **item.dict()}
-  if q:
-    result.update({"q": q})
-  return result
+# middleware
+# @app.middleware("http")
+# async def db_session_middleware(request: Request, call_next):
+#   response = Response("Internal Server Error", status_code=500)
+#   try:
+#     request.state.db = SessionLocal()
+#     response = await call_next(request)
+#   finally:
+#     request.state.db.close()
+#   return response
